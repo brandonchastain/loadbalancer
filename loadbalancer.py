@@ -1,7 +1,8 @@
-from bottle import route, run, request, response, redirect
+from bottle import route, run, request, response
 import requests
 import configparser
 from urllib.parse import urlparse
+import sys
 
 serverlist = None
 currentServer = 0
@@ -15,13 +16,18 @@ def index(p=""):
     headers = dict(request.headers)
 
     print("%s %s ->" % (method, request.url))
-    url = getServer(request.environ.get("REMOTE_ADDR")) + '/' + p
+    #url = getServer(request.environ.get("REMOTE_ADDR")) + '/' + p
+    url = getServerRoundRobin()
     print("%s" % (url))
 
     headers['Host'] = urlparse(url).netloc
 
-    r = requests.request(method=method, url=url, data=body, headers=headers, allow_redirects=False)
-
+    try:
+        r = requests.request(method=method, url=url, data=body, headers=headers, allow_redirects=False)
+    except Exception as e:
+        response.status = 500
+        return "error: %s" % (e)
+        
     response.status = r.status_code
     for key in r.headers:
         response.headers[key] = r.headers[key]
